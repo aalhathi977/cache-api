@@ -21,8 +21,6 @@ import java.util.Map;
 public class RedisConfigs {
 
     @Bean
-    //@RequestScope // if you don't know what you're doing , don't touch it
-//    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public RedisTemplate<String, Serializable> redisCacheTemplate(LettuceConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Serializable> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
@@ -31,17 +29,17 @@ public class RedisConfigs {
 
 
     @Bean
-    @RequestScope // if you don't know what you're doing , don't touch it
+    @RequestScope
     public LettuceConnectionFactory redisFactory(HttpServletRequest request) {
-        Map attribute = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-        int db_index = Integer.parseInt(attribute.get("db_index").toString());
 
-        // check db_index is a valid int
-        if (db_index < 0 || db_index > 15)
-            throw new IllegalParamException("4002", "db_index should be an integer between 0 and 15");
+        // ConnectionConfigurationExtractor(HttpServletRequest) --> do the validation inside the extractor
+
+        RedisConfigurationExtractor extractor = new RedisConfigurationExtractor(request);
 
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setDatabase(db_index);
+        configuration.setDatabase(extractor.getDbIndex());
+        configuration.setUsername(extractor.getUsername());
+        configuration.setPassword(extractor.getPassword());
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(configuration);
         factory.setShareNativeConnection(false);
