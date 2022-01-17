@@ -50,4 +50,26 @@ public class KVPairService {
             }
         });
     }
+
+    public List<Object> post(String key , String body , Integer ttl){
+        final String prefixedKey = SERVICE_PREFIX + key;
+        return redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                operations.opsForValue().setIfAbsent(prefixedKey, body ,ttl, TimeUnit.SECONDS);
+                return null;
+            }
+        });
+    }
+
+    public List<Object> delete(String key){
+        final String prefixedKey = SERVICE_PREFIX + key;
+        return redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                operations.opsForValue().getAndDelete(prefixedKey);
+                return null;
+            }
+        });
+    }
 }

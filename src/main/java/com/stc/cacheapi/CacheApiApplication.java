@@ -1,5 +1,6 @@
 package com.stc.cacheapi;
 
+import com.stc.cacheapi.configs.RedisConfigurationExtractor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
