@@ -1,72 +1,88 @@
 package com.stc.cacheapi.controllers;
 
+import com.stc.cacheapi.exceptions.ApplicationException;
 import com.stc.cacheapi.exceptions.IllegalParamException;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import com.stc.cacheapi.exceptions.KeyNotFoundException;
+import com.stc.cacheapi.services.KVPairService;
+import com.stc.cacheapi.utils.ValidationUtils;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
-import org.springframework.data.redis.core.types.RedisClientInfo;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 public class KVPairController {
 
+    private final KVPairService kvPairService ;
 
-    final RedisTemplate<String, Serializable> redisTemplate;
-    private static final String SERVICE_PREFIX = "KV_";
-
-
-    public KVPairController(RedisTemplate<String, Serializable> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.redisTemplate.setKeySerializer(StringRedisSerializer.UTF_8);
-        this.redisTemplate.setValueSerializer(StringRedisSerializer.UTF_8);
+    public KVPairController(KVPairService kvPairService) {
+        this.kvPairService = kvPairService;
     }
 
     @GetMapping("/v1/kv-pairs/{db_index}/{key}")
-    ResponseEntity<?> KVPair(@PathVariable int db_index, @PathVariable String key, Integer ttl) {
-        final String prefixedKey = SERVICE_PREFIX + key;
+    ResponseEntity<?> get(@PathVariable String key, String ttl) {
 
-        if (Objects.isNull(ttl) || ttl < 0)
-            throw new IllegalParamException("4001", "TTL can not be negative , to delete a key use delete service");
+        // ttl validation
+        Integer parsed_ttl = parseTTL(ttl) ;
+
+        // key validation
+        if (Objects.isNull(key) || !StringUtils.hasText(key))
+            throw new IllegalParamException("4004", "key is missing or incorrect");
+
+        // call the get service
+        List<Object> results = kvPairService.get(key,parsed_ttl);
+
+        // parse the result and return appropriate http
+        if (Objects.isNull(results.get(0))){
+            throw new KeyNotFoundException();
+        }else {
+            return ResponseEntity.ok(results.get(0));
+        }
+    }
+
+    @PutMapping("/v1/kv-pairs/{db_index}/{key}")
+    ResponseEntity<?> put(@PathVariable String key, String ttl , @RequestBody String body ) {
+        // ttl validation
+        Integer parsed_ttl = parseTTL(ttl) ;
+
+        // key validation
+        if (Objects.isNull(key) || !StringUtils.hasText(key))
+            throw new IllegalParamException("4004", "key is missing or incorrect");
+
+        // body validation
+        if (Objects.isNull(body) || !StringUtils.hasText(body))
+            throw new IllegalParamException("4005", "value can not be empty");
+
+        // call the get service
+        List<Object> results = kvPairService.put(key, body, parsed_ttl);
+
+        // parse the result and return appropriate http
+        if (Boolean.FALSE.equals(results.get(0))){
+            throw new KeyNotFoundException();
+        }else {
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        }
+
+    }
 
 
 
-        List<Object> results = redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                var valueOps = operations.opsForValue();
-                // Auth
 
-                // additional validation for the ttl is needed
-                if (ttl > 0) {
-                    valueOps.getAndExpire(prefixedKey, ttl, TimeUnit.SECONDS);
-                } else {
-                    valueOps.get(prefixedKey);
-                }
+    private Integer parseTTL(String ttl){
+        if (Objects.nonNull(ttl))
+            if (!ValidationUtils.isNumeric(ttl) || Integer.parseInt(ttl) <= 0) // eliminate text and negative numbers
+                throw new IllegalParamException("4001", "TTL need to be a positive number , to delete a key use delete service");
+            else
+                return Integer.parseInt(ttl);
+        else
+            return null;
 
-                return null;
-            }
-        });
-        System.out.println(Arrays.toString(results.toArray()));
-
-        return ResponseEntity.ok("done");
     }
 
     @ExceptionHandler(IllegalParamException.class)
@@ -78,5 +94,11 @@ public class KVPairController {
                 ));
     }
 
-
+    @ExceptionHandler(KeyNotFoundException.class)
+    ResponseEntity<?> outOfRangeHandler(KeyNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "code", e.getCode(),
+                "message", e.getMessage()
+        ));
+    }
 }

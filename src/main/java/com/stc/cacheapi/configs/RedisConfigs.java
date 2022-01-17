@@ -1,21 +1,17 @@
 package com.stc.cacheapi.configs;
 
-import com.stc.cacheapi.exceptions.IllegalParamException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnection;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.context.annotation.RequestScope;
-import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Map;
 
 @Configuration
 public class RedisConfigs {
@@ -24,6 +20,8 @@ public class RedisConfigs {
     public RedisTemplate<String, Serializable> redisCacheTemplate(LettuceConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Serializable> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(StringRedisSerializer.UTF_8);
+        template.setValueSerializer(StringRedisSerializer.UTF_8);
         return template;
     }
 
@@ -31,16 +29,17 @@ public class RedisConfigs {
     @Bean
     @RequestScope
     public LettuceConnectionFactory redisFactory(HttpServletRequest request) {
-
-        // ConnectionConfigurationExtractor(HttpServletRequest) --> do the validation inside the extractor
-
+        // extract the needed info from the request
         RedisConfigurationExtractor extractor = new RedisConfigurationExtractor(request);
 
+        // build Connection ( in recovery option , we should use RedisSentinelConfiguration )
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setDatabase(extractor.getDbIndex());
         configuration.setUsername(extractor.getUsername());
         configuration.setPassword(extractor.getPassword());
+        // FIXME: 1/17/2022 extract the Auth info and set it here
 
+        // Build the Factory and inject the configuration
         LettuceConnectionFactory factory = new LettuceConnectionFactory(configuration);
         factory.setShareNativeConnection(false);
         factory.setPipeliningFlushPolicy(LettuceConnection.PipeliningFlushPolicy.flushOnClose());
