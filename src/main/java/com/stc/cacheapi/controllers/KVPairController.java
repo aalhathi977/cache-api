@@ -20,6 +20,7 @@ import java.util.Objects;
 import static com.stc.cacheapi.utils.ValidationUtils.*;
 
 @RestController
+@RequestMapping("/v1/kv-pairs/{db_index}/{key}")
 public class KVPairController {
 
     private final KVPairService kvPairService ;
@@ -28,7 +29,7 @@ public class KVPairController {
         this.kvPairService = kvPairService;
     }
 
-    @GetMapping("/v1/kv-pairs/{db_index}/{key}")
+    @GetMapping
     ResponseEntity<?> get(@PathVariable String key, String ttl) {
         // validation
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
@@ -45,7 +46,7 @@ public class KVPairController {
         }
     }
 
-    @PutMapping("/v1/kv-pairs/{db_index}/{key}")
+    @PutMapping
     ResponseEntity<?> put(@PathVariable String key, String ttl , @RequestBody(required = false) String body ) {
 
         // validation
@@ -65,7 +66,7 @@ public class KVPairController {
 
     }
 
-    @PostMapping("/v1/kv-pairs/{db_index}/{key}")
+    @PostMapping
     ResponseEntity<?> post(@PathVariable String key, String ttl , @RequestBody(required = false) String body ) {
         // ttl validation
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
@@ -86,7 +87,7 @@ public class KVPairController {
 
     }
 
-    @DeleteMapping("/v1/kv-pairs/{db_index}/{key}")
+    @DeleteMapping
     ResponseEntity<?> delete(@PathVariable String key) {
         // validation
         String sanitized_key = sanitizeKey(key);

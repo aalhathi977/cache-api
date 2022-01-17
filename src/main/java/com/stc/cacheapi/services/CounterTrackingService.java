@@ -12,62 +12,67 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class KVPairService {
-
+public class CounterTrackingService {
     final RedisTemplate<String, Serializable> redisTemplate;
-    private static final String SERVICE_PREFIX = "KV_";
+    private static final String SERVICE_PREFIX = "CT_";
 
-    public KVPairService(RedisTemplate<String, Serializable> redisTemplate) {
+    public CounterTrackingService(RedisTemplate<String, Serializable> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
-    public List<Object> get(String key , Integer ttl){
-        final String prefixedKey = SERVICE_PREFIX + key;
+    public List<Object> get(String counter , Integer ttl){
+        final String prefixedCounter = SERVICE_PREFIX + counter;
         return redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
                 if (Objects.nonNull(ttl)) {
-                    operations.opsForValue().getAndExpire(prefixedKey, ttl, TimeUnit.SECONDS);
+                    operations.opsForValue().getAndExpire(prefixedCounter, ttl, TimeUnit.SECONDS);
                 } else {
-                    operations.opsForValue().get(prefixedKey);
+                    operations.opsForValue().get(prefixedCounter);
                 }
                 return null;
             }
         });
     }
 
-    public List<Object> put(String key , String value , Integer ttl){
-        final String prefixedKey = SERVICE_PREFIX + key;
+    public List<Object> put(String counter , Integer ttl){
+        final String prefixedCounter = SERVICE_PREFIX + counter;
         return redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
                 if (Objects.nonNull(ttl)) {
-                    operations.opsForValue().setIfPresent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
+                    operations.multi();
+                    operations.opsForValue().increment(prefixedCounter);
+                    operations.expire(prefixedCounter ,ttl, TimeUnit.SECONDS);
+                    operations.exec();
                 } else {
-                    operations.opsForValue().setIfPresent(prefixedKey,value);
+                    operations.opsForValue().increment(prefixedCounter);
                 }
                 return null;
             }
         });
     }
 
-    public List<Object> post(String key , String value , Integer ttl){
-        final String prefixedKey = SERVICE_PREFIX + key;
+    public List<Object> post(String counter , Integer ttl){
+        final String prefixedCounter = SERVICE_PREFIX + counter;
         return redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.opsForValue().setIfAbsent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
+                operations.multi();
+                operations.opsForValue().increment(prefixedCounter);
+                operations.expire(prefixedCounter ,ttl, TimeUnit.SECONDS);
+                operations.exec();
                 return null;
             }
         });
     }
 
-    public List<Object> delete(String key){
-        final String prefixedKey = SERVICE_PREFIX + key;
+    public List<Object> delete(String counter){
+        final String prefixedCounter = SERVICE_PREFIX + counter;
         return redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.opsForValue().getAndDelete(prefixedKey);
+                operations.opsForValue().getAndDelete(prefixedCounter);
                 return null;
             }
         });
