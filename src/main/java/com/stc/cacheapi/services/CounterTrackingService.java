@@ -1,5 +1,6 @@
 package com.stc.cacheapi.services;
 
+import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -37,20 +38,32 @@ public class CounterTrackingService {
 
     public List<Object> put(String counter , Integer ttl){
         final String prefixedCounter = SERVICE_PREFIX + counter;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                if (Objects.nonNull(ttl)) {
-                    operations.multi();
-                    operations.opsForValue().increment(prefixedCounter);
-                    operations.expire(prefixedCounter ,ttl, TimeUnit.SECONDS);
-                    operations.exec();
-                } else {
-                    operations.opsForValue().increment(prefixedCounter);
-                }
-                return null;
+
+        redisTemplate.watch(prefixedCounter);
+        if (Boolean.FALSE.equals(redisTemplate.hasKey(prefixedCounter))) {
+            redisTemplate.unwatch();
+            throw new KeyNotFoundException();
+        }else {
+            List<Object> results ;
+            if (Objects.nonNull(ttl)) {
+                results = redisTemplate.executePipelined(new SessionCallback<>() {
+                    @Override
+                    public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                        operations.watch(prefixedCounter);
+                        operations.multi();
+                        operations.opsForValue().increment(prefixedCounter);
+                        operations.expire(prefixedCounter, ttl, TimeUnit.SECONDS);
+                        operations.exec();
+                        operations.unwatch();
+                        return null;
+                    }
+                });
+            } else {
+                results = List.of(redisTemplate.opsForValue().increment(prefixedCounter));
             }
-        });
+            redisTemplate.unwatch();
+            return results ;
+        }
     }
 
     public List<Object> post(String counter , Integer ttl){

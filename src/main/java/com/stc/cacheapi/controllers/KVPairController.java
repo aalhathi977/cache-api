@@ -1,20 +1,13 @@
 package com.stc.cacheapi.controllers;
 
-import com.stc.cacheapi.exceptions.ApplicationException;
-import com.stc.cacheapi.exceptions.IllegalParamException;
 import com.stc.cacheapi.exceptions.KeyAlreadyExistException;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import com.stc.cacheapi.services.KVPairService;
-import com.stc.cacheapi.utils.ValidationUtils;
-import org.springframework.beans.factory.annotation.Required;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static com.stc.cacheapi.utils.ValidationUtils.*;

@@ -1,5 +1,7 @@
 package com.stc.cacheapi.exceptions;
 
+import io.lettuce.core.RedisCommandExecutionException;
+import io.lettuce.core.RedisException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,6 +37,18 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 "code", e.getCode(),
                 "message", e.getMessage()
         ));
+    }
+
+    // REDIS GENERAL EXCEPTION
+    @ExceptionHandler(RedisException.class)
+    ResponseEntity<?> keyAlreadyExistHandler(RedisException e) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .header("x-error",e.getMessage())
+                .body(Map.of(
+                        "code", HttpStatus.BAD_GATEWAY.value() + "1",
+                        "message", e.getMessage()
+                ));
     }
 
 }
