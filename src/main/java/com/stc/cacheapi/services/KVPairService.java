@@ -36,7 +36,7 @@ public class KVPairService {
         });
     }
 
-    public List<Object> put(String key , String value , Integer ttl){
+    public List<Object> update(String key , String value , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
         return redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
@@ -51,7 +51,7 @@ public class KVPairService {
         });
     }
 
-    public List<Object> post(String key , String value , Integer ttl){
+    public List<Object> create(String key , String value , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
         return redisTemplate.executePipelined(new SessionCallback<>() {
             @Override

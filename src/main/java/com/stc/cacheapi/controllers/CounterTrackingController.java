@@ -45,7 +45,7 @@ public class CounterTrackingController {
         String sanitized_counter = sanitizeKey(counter);
 
         // call the get service
-        counterTrackingService.put(sanitized_counter,sanitized_ttl);
+        counterTrackingService.update(sanitized_counter,sanitized_ttl);
 
         // parse the result and return appropriate http
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -58,10 +58,10 @@ public class CounterTrackingController {
         String sanitized_counter = sanitizeKey(counter);
 
         // call the get service
-        List<Object> results = counterTrackingService.post(sanitized_counter,sanitized_ttl);
+        counterTrackingService.create(sanitized_counter,sanitized_ttl);
 
         // parse the result and return appropriate http
-        return ResponseEntity.ok("Done");
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @DeleteMapping
@@ -70,10 +70,13 @@ public class CounterTrackingController {
         String sanitized_counter = sanitizeKey(counter);
 
         // call the get service
-        List<Object> results = counterTrackingService.delete(sanitized_counter);
+        Boolean isDeleted = counterTrackingService.delete(sanitized_counter);
 
         // parse the result and return appropriate http
-        return ResponseEntity.ok("Done");
+        if (isDeleted)
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        else
+            throw new KeyNotFoundException("4042","the provided counter does not exist");
     }
 
 }

@@ -1,5 +1,6 @@
 package com.stc.cacheapi.services;
 
+import com.stc.cacheapi.exceptions.KeyAlreadyExistException;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
@@ -36,58 +37,48 @@ public class CounterTrackingService {
         });
     }
 
-    public List<Object> put(String counter , Integer ttl){
+    public List<Object> update(String counter , Integer ttl){
         final String prefixedCounter = SERVICE_PREFIX + counter;
-
-        redisTemplate.watch(prefixedCounter);
         if (Boolean.FALSE.equals(redisTemplate.hasKey(prefixedCounter))) {
-            redisTemplate.unwatch();
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException("4041","the provided counter does not exist");
         }else {
-            List<Object> results ;
-            if (Objects.nonNull(ttl)) {
-                results = redisTemplate.executePipelined(new SessionCallback<>() {
+            if (Objects.nonNull(ttl))
+                return redisTemplate.executePipelined(new SessionCallback<>() {
                     @Override
                     public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                        operations.watch(prefixedCounter);
                         operations.multi();
                         operations.opsForValue().increment(prefixedCounter);
                         operations.expire(prefixedCounter, ttl, TimeUnit.SECONDS);
                         operations.exec();
-                        operations.unwatch();
                         return null;
                     }
                 });
-            } else {
-                results = List.of(redisTemplate.opsForValue().increment(prefixedCounter));
-            }
-            redisTemplate.unwatch();
-            return results ;
+            else
+                return List.of(redisTemplate.opsForValue().increment(prefixedCounter));
+
         }
     }
 
-    public List<Object> post(String counter , Integer ttl){
+    public List<Object> create(String counter , Integer ttl){
         final String prefixedCounter = SERVICE_PREFIX + counter;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.multi();
-                operations.opsForValue().increment(prefixedCounter);
-                operations.expire(prefixedCounter ,ttl, TimeUnit.SECONDS);
-                operations.exec();
-                return null;
-            }
-        });
+
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(prefixedCounter))) {
+            throw new KeyAlreadyExistException("4091","the provided counter already exist");
+        }else {
+            return redisTemplate.executePipelined(new SessionCallback<>() {
+                @Override
+                public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                    operations.multi();
+                    operations.opsForValue().increment(prefixedCounter);
+                    operations.expire(prefixedCounter, ttl, TimeUnit.SECONDS);
+                    operations.exec();
+                    return null;
+                }
+            });
+        }
     }
 
-    public List<Object> delete(String counter){
-        final String prefixedCounter = SERVICE_PREFIX + counter;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.opsForValue().getAndDelete(prefixedCounter);
-                return null;
-            }
-        });
+    public Boolean delete(String counter){
+        return redisTemplate.unlink(SERVICE_PREFIX + counter);
     }
 }

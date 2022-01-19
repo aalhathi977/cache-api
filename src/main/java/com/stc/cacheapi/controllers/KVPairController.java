@@ -48,7 +48,7 @@ public class KVPairController {
         String sanitized_value = sanitizeValue(body);
 
         // call the get service
-        List<Object> results = kvPairService.put(sanitized_key, sanitized_value, sanitized_ttl);
+        List<Object> results = kvPairService.update(sanitized_key, sanitized_value, sanitized_ttl);
 
         // parse the result and return appropriate http
         if (Boolean.FALSE.equals(results.get(0))){
@@ -69,7 +69,7 @@ public class KVPairController {
         String sanitized_value = sanitizeValue(body);
 
         // call the get service
-        List<Object> results = kvPairService.post(sanitized_key, sanitized_value, sanitized_ttl);
+        List<Object> results = kvPairService.create(sanitized_key, sanitized_value, sanitized_ttl);
 
         // parse the result and return appropriate http
         if (Boolean.FALSE.equals(results.get(0))){

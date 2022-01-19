@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class KeyAlreadyExistException extends ApplicationException{
-    private String code = "4006";
+    private String code = "4090";
     private String message = "the provided key already exist";
 }
