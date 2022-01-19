@@ -29,13 +29,13 @@ public class KVPairController {
         String sanitized_key = sanitizeKey(key);
 
         // call the get service
-        List<Object> results = kvPairService.get(sanitized_key,sanitized_ttl);
+        Object result = kvPairService.get(sanitized_key,sanitized_ttl);
 
         // parse the result and return appropriate http
-        if (Objects.isNull(results.get(0))){
+        if (Objects.isNull(result)){
             throw new KeyNotFoundException();
         }else {
-            return ResponseEntity.ok(results.get(0));
+            return ResponseEntity.ok(result);
         }
     }
 
@@ -48,13 +48,13 @@ public class KVPairController {
         String sanitized_value = sanitizeValue(body);
 
         // call the get service
-        List<Object> results = kvPairService.update(sanitized_key, sanitized_value, sanitized_ttl);
+        Boolean isUpdated = kvPairService.update(sanitized_key, sanitized_value, sanitized_ttl);
 
         // parse the result and return appropriate http
-        if (Boolean.FALSE.equals(results.get(0))){
-            throw new KeyNotFoundException();
-        }else {
+        if (isUpdated){
             return ResponseEntity.status(HttpStatus.CREATED).build();
+        }else {
+            throw new KeyNotFoundException();
         }
 
     }
@@ -69,13 +69,13 @@ public class KVPairController {
         String sanitized_value = sanitizeValue(body);
 
         // call the get service
-        List<Object> results = kvPairService.create(sanitized_key, sanitized_value, sanitized_ttl);
+        Boolean isCreated = kvPairService.create(sanitized_key, sanitized_value, sanitized_ttl);
 
         // parse the result and return appropriate http
-        if (Boolean.FALSE.equals(results.get(0))){
-            throw new KeyAlreadyExistException();
-        }else {
+        if (isCreated){
             return ResponseEntity.status(HttpStatus.CREATED).build();
+        }else {
+            throw new KeyAlreadyExistException();
         }
 
     }
@@ -86,13 +86,13 @@ public class KVPairController {
         String sanitized_key = sanitizeKey(key);
 
         // call the get service
-        List<Object> results = kvPairService.delete(sanitized_key);
+        Boolean isDeleted = kvPairService.delete(sanitized_key);
 
         // parse the result and return appropriate http
-        if (results.get(0) == null){
-            throw new KeyNotFoundException();
-        }else {
+        if (isDeleted){
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }else {
+            throw new KeyNotFoundException();
         }
 
     }

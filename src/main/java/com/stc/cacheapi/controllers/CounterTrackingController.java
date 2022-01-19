@@ -29,13 +29,13 @@ public class CounterTrackingController {
         String sanitized_counter = sanitizeKey(counter);
 
         // call the get service
-        List<Object> results = counterTrackingService.get(sanitized_counter,sanitized_ttl);
+        Object result = counterTrackingService.get(sanitized_counter,sanitized_ttl);
 
         // parse the result and return appropriate http
-        if (Objects.isNull(results.get(0)))
+        if (Objects.isNull(result))
             throw new KeyNotFoundException();
         else
-            return ResponseEntity.ok(results.get(0));
+            return ResponseEntity.ok(result);
     }
 
     @PutMapping

@@ -1,13 +1,11 @@
 package com.stc.cacheapi.services;
 
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -21,55 +19,32 @@ public class KVPairService {
         this.redisTemplate = redisTemplate;
     }
 
-    public List<Object> get(String key , Integer ttl){
+    public Object get(String key , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                if (Objects.nonNull(ttl)) {
-                    operations.opsForValue().getAndExpire(prefixedKey, ttl, TimeUnit.SECONDS);
-                } else {
-                    operations.opsForValue().get(prefixedKey);
-                }
-                return null;
-            }
-        });
+        if (Objects.nonNull(ttl)) {
+            return redisTemplate.opsForValue().getAndExpire(prefixedKey, ttl, TimeUnit.SECONDS);
+        } else {
+            return redisTemplate.opsForValue().get(prefixedKey);
+        }
     }
 
-    public List<Object> update(String key , String value , Integer ttl){
+    public Boolean update(String key , String value , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                if (Objects.nonNull(ttl)) {
-                    operations.opsForValue().setIfPresent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
-                } else {
-                    operations.opsForValue().setIfPresent(prefixedKey,value);
-                }
-                return null;
-            }
-        });
+        if (Objects.nonNull(ttl)) {
+            return redisTemplate.opsForValue().setIfPresent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
+        } else {
+            RedisScript<Boolean> script = RedisScript.of("return redis.call('SET', KEYS[1], ARGV[1], 'XX','KEEPTTL')",Boolean.class);
+            return redisTemplate.execute(script, Collections.singletonList(prefixedKey), value);
+        }
     }
 
-    public List<Object> create(String key , String value , Integer ttl){
+    public Boolean create(String key , String value , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.opsForValue().setIfAbsent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
-                return null;
-            }
-        });
+        return redisTemplate.opsForValue().setIfAbsent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
     }
 
-    public List<Object> delete(String key){
+    public Boolean delete(String key){
         final String prefixedKey = SERVICE_PREFIX + key;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.opsForValue().getAndDelete(prefixedKey);
-                return null;
-            }
-        });
+        return redisTemplate.unlink(prefixedKey);
     }
 }

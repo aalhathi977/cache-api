@@ -22,19 +22,13 @@ public class CounterTrackingService {
         this.redisTemplate = redisTemplate;
     }
 
-    public List<Object> get(String counter , Integer ttl){
+    public Object get(String counter , Integer ttl){
         final String prefixedCounter = SERVICE_PREFIX + counter;
-        return redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                if (Objects.nonNull(ttl)) {
-                    operations.opsForValue().getAndExpire(prefixedCounter, ttl, TimeUnit.SECONDS);
-                } else {
-                    operations.opsForValue().get(prefixedCounter);
-                }
-                return null;
-            }
-        });
+        if (Objects.nonNull(ttl)) {
+            return redisTemplate.opsForValue().getAndExpire(prefixedCounter, ttl, TimeUnit.SECONDS);
+        } else {
+            return redisTemplate.opsForValue().get(prefixedCounter);
+        }
     }
 
     public List<Object> update(String counter , Integer ttl){
