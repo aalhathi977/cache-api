@@ -55,6 +55,8 @@ public class CounterTrackingController {
     ResponseEntity<?> post (@PathVariable String counter,String ttl){
         // validation
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
+        if (sanitized_ttl == null)
+            sanitized_ttl = 900 ;
         String sanitized_counter = sanitizeKey(counter);
 
         // call the get service
