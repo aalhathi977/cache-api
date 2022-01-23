@@ -24,11 +24,10 @@ public class CounterTrackingService {
 
     public Object get(String counter , Integer ttl){
         final String prefixedCounter = SERVICE_PREFIX + counter;
-        if (Objects.nonNull(ttl)) {
+        if (Objects.nonNull(ttl))
             return redisTemplate.opsForValue().getAndExpire(prefixedCounter, ttl, TimeUnit.SECONDS);
-        } else {
+        else
             return redisTemplate.opsForValue().get(prefixedCounter);
-        }
     }
 
     public List<Object> update(String counter , Integer ttl){
@@ -49,16 +48,14 @@ public class CounterTrackingService {
                 });
             else
                 return List.of(redisTemplate.opsForValue().increment(prefixedCounter));
-
         }
     }
 
     public List<Object> create(String counter , Integer ttl){
         final String prefixedCounter = SERVICE_PREFIX + counter;
-
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(prefixedCounter))) {
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(prefixedCounter)))
             throw new KeyAlreadyExistException("4091","the provided counter already exist");
-        }else {
+        else {
             return redisTemplate.executePipelined(new SessionCallback<>() {
                 @Override
                 public List<Object> execute(RedisOperations operations) throws DataAccessException {

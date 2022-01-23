@@ -21,18 +21,17 @@ public class KVPairService {
 
     public Object get(String key , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
-        if (Objects.nonNull(ttl)) {
+        if (Objects.nonNull(ttl))
             return redisTemplate.opsForValue().getAndExpire(prefixedKey, ttl, TimeUnit.SECONDS);
-        } else {
+        else
             return redisTemplate.opsForValue().get(prefixedKey);
-        }
     }
 
     public Boolean update(String key , String value , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
-        if (Objects.nonNull(ttl)) {
+        if (Objects.nonNull(ttl))
             return redisTemplate.opsForValue().setIfPresent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
-        } else {
+        else {
             RedisScript<Boolean> script = RedisScript.of("return redis.call('SET', KEYS[1], ARGV[1], 'XX','KEEPTTL')",Boolean.class);
             return redisTemplate.execute(script, Collections.singletonList(prefixedKey), value);
         }
