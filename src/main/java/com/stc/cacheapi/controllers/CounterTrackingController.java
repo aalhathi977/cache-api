@@ -29,7 +29,7 @@ public class CounterTrackingController {
         Object result = counterTrackingService.get(sanitized_counter,sanitized_ttl);
 
         if (Objects.isNull(result))
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException("4046","the provided counter does not exist");
         else
             return ResponseEntity.ok(result);
     }

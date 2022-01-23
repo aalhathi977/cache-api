@@ -12,4 +12,8 @@ import lombok.NoArgsConstructor;
 public class KeyAlreadyExistException extends ApplicationException{
     private String code = "4090";
     private String message = "the provided key already exist";
+
+    public KeyAlreadyExistException(String code) {
+        this.code = code;
+    }
 }

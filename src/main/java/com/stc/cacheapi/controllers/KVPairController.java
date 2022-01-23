@@ -29,7 +29,7 @@ public class KVPairController {
         Object result = kvPairService.get(sanitized_key,sanitized_ttl);
 
         if (Objects.isNull(result))
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException("4043");
         else
             return ResponseEntity.ok(result);
     }
@@ -45,7 +45,7 @@ public class KVPairController {
         if (isUpdated)
             return ResponseEntity.status(HttpStatus.CREATED).build();
         else
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException("4044");
     }
 
     @PostMapping
@@ -61,7 +61,7 @@ public class KVPairController {
         if (isCreated)
             return ResponseEntity.status(HttpStatus.CREATED).build();
         else
-            throw new KeyAlreadyExistException();
+            throw new KeyAlreadyExistException("4092");
     }
 
     @DeleteMapping
@@ -73,7 +73,7 @@ public class KVPairController {
         if (isDeleted)
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         else
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException("4045");
     }
 
 }

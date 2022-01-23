@@ -12,4 +12,8 @@ import lombok.NoArgsConstructor;
 public class KeyNotFoundException extends ApplicationException{
     private String code = "4040";
     private String message = "the provided key does not exist";
+
+    public KeyNotFoundException(String code) {
+        this.code = code ;
+    }
 }
