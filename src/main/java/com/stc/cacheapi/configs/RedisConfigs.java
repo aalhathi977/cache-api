@@ -27,21 +27,24 @@ public class RedisConfigs {
 
 
     @Bean
-    @RequestScope
-    public LettuceConnectionFactory redisFactory(HttpServletRequest request) {
+//    @RequestScope
+    public LettuceConnectionFactory redisFactory(/*HttpServletRequest request*/) {
         // extract the needed info from the request
-        RedisConfigurationExtractor extractor = new RedisConfigurationExtractor(request);
+//        RedisConfigurationExtractor extractor = new RedisConfigurationExtractor(request);
 
         // build Connection ( in recovery option , we should use RedisSentinelConfiguration )
-        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setDatabase(extractor.getDbIndex());
-        configuration.setUsername(extractor.getUsername());
-        configuration.setPassword(extractor.getPassword());
+//        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+//        configuration.setDatabase(extractor.getDbIndex());
+//        configuration.setUsername(extractor.getUsername());
+//        configuration.setPassword(extractor.getPassword());
         // FIXME: 1/17/2022 extract the Auth info and set it here
+
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+//        configuration.setDatabase(extractor.getDbIndex());
 
         // Build the Factory and inject the configuration
         LettuceConnectionFactory factory = new LettuceConnectionFactory(configuration);
-        factory.setShareNativeConnection(false);
+        factory.setShareNativeConnection(true);
         factory.setPipeliningFlushPolicy(LettuceConnection.PipeliningFlushPolicy.flushOnClose());
         return factory;
     }
