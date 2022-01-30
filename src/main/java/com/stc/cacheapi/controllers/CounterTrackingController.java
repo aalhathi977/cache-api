@@ -42,7 +42,7 @@ public class CounterTrackingController {
         String sanitized_counter = sanitizeKey(counter);
 
         // call the get service
-        counterTrackingService.update(sanitized_dbIndex,sanitized_counter,sanitized_ttl);
+        counterTrackingService.update(sanitized_dbIndex, sanitized_counter, sanitized_ttl);
 
         // parse the result and return appropriate http
         return ResponseEntity.status(HttpStatus.CREATED).build();

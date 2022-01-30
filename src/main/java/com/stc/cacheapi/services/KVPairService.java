@@ -12,12 +12,12 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class KVPairService {
 
-    final RedisTemplate<String, Serializable> redisTemplate;
+    final RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();;
     private static final String SERVICE_PREFIX = "KV_";
 
-    public KVPairService(RedisTemplate<String, Serializable> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
+//    public KVPairService(RedisTemplate<String, Serializable> redisTemplate) {
+//        this.redisTemplate = redisTemplate;
+//    }
 
     public Object get(String key , Integer ttl){
         final String prefixedKey = SERVICE_PREFIX + key;
