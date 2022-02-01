@@ -2,10 +2,14 @@ package com.stc.cacheapi.exceptions;
 
 import io.lettuce.core.RedisCommandExecutionException;
 import io.lettuce.core.RedisException;
+import org.springframework.beans.TypeMismatchException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.Map;
@@ -39,6 +43,23 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(BasicAuthenticationParsingException.class)
+    ResponseEntity<?> basicAuthenticationParsing(BasicAuthenticationParsingException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "code", e.getCode(),
+                "message", e.getMessage()
+        ));
+    }
+
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    ResponseEntity<?> missingRequestHeader(MissingRequestHeaderException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "code", "4006",
+                "message", e.getHeaderName() + " ( Basic Authentication ) is required "
+        ));
+    }
+
     // REDIS GENERAL EXCEPTION
     @ExceptionHandler(RedisException.class)
     ResponseEntity<?> keyAlreadyExistHandler(RedisException e) {
@@ -51,4 +72,21 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 ));
     }
 
+
+    // handling BasicAuthenticationParsingException
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+        Throwable throwable = ex.getCause().getCause();
+        if (throwable instanceof BasicAuthenticationParsingException) {
+            BasicAuthenticationParsingException castedThrowable = (BasicAuthenticationParsingException) throwable;
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "code", castedThrowable.getCode(),
+                            "message", castedThrowable.getMessage()
+                    ));
+        }else {
+            return super.handleTypeMismatch(ex, headers, status, request);
+        }
+    }
 }

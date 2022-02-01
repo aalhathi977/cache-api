@@ -1,68 +1,51 @@
 package com.stc.cacheapi.services;
 
+import com.stc.cacheapi.configs.RedisConnection;
 import com.stc.cacheapi.exceptions.KeyAlreadyExistException;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.RedisSentinelConnection;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnection;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.RedisOperations;
+import com.stc.cacheapi.parsers.BasicAuthenticationParser;
+import io.lettuce.core.*;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.sync.RedisCommands;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.data.redis.core.types.Expiration;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class CounterTrackingService {
     final RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();
     private static final String SERVICE_PREFIX = "CT_";
+    final RedisConnection redisConnection ;
 
-//    public CounterTrackingService(RedisTemplate<String, Serializable> redisTemplate) {
-//        this.redisTemplate = redisTemplate;
-//    }
+    public CounterTrackingService(RedisConnection redisConnection) {
+        this.redisConnection = redisConnection;
+    }
 
-    public Object get(Integer dbIndex , String counter , Integer ttl){
-        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setDatabase(dbIndex);
-        configuration.setPassword("12345");
-        LettuceConnectionFactory factory = new LettuceConnectionFactory(configuration);
-        factory.setShareNativeConnection(false);
-        factory.setPipeliningFlushPolicy(LettuceConnection.PipeliningFlushPolicy.flushOnClose());
-        factory.afterPropertiesSet();
-
-        RedisTemplate<String, Serializable> template = new RedisTemplate<>();
-        template.setKeySerializer(StringRedisSerializer.UTF_8);
-        template.setValueSerializer(StringRedisSerializer.UTF_8);
-        template.setConnectionFactory(factory);
-
-        RedisConnection connection = Objects.requireNonNull(template.getConnectionFactory()).getConnection();
+    @Retryable(maxAttempts = 2, include = {RedisCommandExecutionException.class,RedisCommandTimeoutException.class}, backoff = @Backoff(value = 0))
+    public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser){
+        RedisURI standalone = redisConnection.getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
+        RedisClient redisClient = RedisClient.create(standalone);
+        StatefulRedisConnection<String, String> connection = redisClient.connect();
+        RedisCommands<String, String> sync = connection.sync();
 
 
         final String prefixedCounter = SERVICE_PREFIX + counter;
-        RedisScript<Integer> script ;
         if (Objects.nonNull(ttl)) {
-            script = RedisScript.of("redis.call('AUTH','12345') ; redis.call('SELECT'," + dbIndex + ");return " +
-                    "redis.call('GETEX', KEYS[1],'EX',ARGV[1])",Integer.class);
-            return connection.getEx(prefixedCounter.getBytes(StandardCharsets.UTF_8), Expiration.seconds(ttl));
-//            return redisTemplate.execute(script, Collections.singletonList(prefixedCounter),ttl.toString());
-        }else {
-            script = RedisScript.of(
-                    "redis.call('AUTH','12345') ;" +
-                    "redis.call('SELECT'," + dbIndex + ");" +
-                    "return redis.call('GET', KEYS[1])"
-                    ,Integer.class);
-            return redisTemplate.execute(script, Collections.singletonList(prefixedCounter));
+            sync.set(prefixedCounter, "230");
+            return sync.getex(prefixedCounter, GetExArgs.Builder.ex(ttl));
+        } else {
+            return sync.get(prefixedCounter);
         }
     }
 
@@ -112,5 +95,10 @@ public class CounterTrackingService {
         RedisScript<Boolean> existsScript = RedisScript.of("redis.call('SELECT'," + dbIndex + ");" +
                 "return redis.call('UNLINK', KEYS[1])",Boolean.class);
         return redisTemplate.execute(existsScript,Collections.singletonList(prefixedCounter));
+    }
+
+    @Recover
+    public void recover(RedisException e){
+        throw e;
     }
 }

@@ -1,32 +1,41 @@
 package com.stc.cacheapi.controllers;
 
+import com.stc.cacheapi.configs.RedisConnection;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
+import com.stc.cacheapi.parsers.BasicAuthenticationParser;
 import com.stc.cacheapi.services.CounterTrackingService;
+import io.lettuce.core.RedisCommandExecutionException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static com.stc.cacheapi.utils.ValidationUtils.*;
 
 @RestController
 @RequestMapping("/v1/counters/{db_index}/{counter}")
+@Slf4j
 public class CounterTrackingController {
     private final CounterTrackingService counterTrackingService ;
+    final RedisConnection redisConnection ;
 
-    public CounterTrackingController(CounterTrackingService counterTrackingService) {
+    public CounterTrackingController(CounterTrackingService counterTrackingService, RedisConnection redisConnection) {
         this.counterTrackingService = counterTrackingService;
+        this.redisConnection = redisConnection;
     }
 
 
     @GetMapping
-    ResponseEntity<?> get (@PathVariable("db_index") String dbIndex , @PathVariable String counter,String ttl){
+    ResponseEntity<?> get (@PathVariable("db_index") String dbIndex , @PathVariable String counter, String ttl ,
+                           @RequestHeader(value = "Authorization" ) BasicAuthenticationParser parser){
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
         Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
         String sanitized_counter = sanitizeKey(counter);
 
-        Object result = counterTrackingService.get(sanitized_dbIndex,sanitized_counter,sanitized_ttl);
+        Object result = counterTrackingService.get(sanitized_dbIndex,sanitized_counter,sanitized_ttl,parser);
 
         if (Objects.isNull(result))
             throw new KeyNotFoundException("4046","the provided counter does not exist");

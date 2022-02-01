@@ -1,0 +1,15 @@
+logging:
+  level:
+    root : off
+    com:
+      stc:
+        cacheapi: ERROR
+  file:
+    name: ${APP_LOGGING_FOLDER}/cache-api.log
+spring:
+  redis:
+    sentinel:
+      master: ${APP_REDIS_SEN_MASTER}
+      password: ${APP_REDIS_SEN_PASSWORD}
+      nodes: ${APP_REDIS_SEN_NODES}
+    connect-timeout: ${APP_REDIS_TIMEOUT}
