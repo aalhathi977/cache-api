@@ -5,19 +5,16 @@ import com.stc.cacheapi.exceptions.KeyAlreadyExistException;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import com.stc.cacheapi.parsers.BasicAuthenticationParser;
 import io.lettuce.core.*;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class CounterTrackingService {
-    final RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();
     private static final String SERVICE_PREFIX = "CT_";
     final RedisConnection redisConnection ;
     private static final int FUTURE_TIMEOUT = 30 ; // SECONDS

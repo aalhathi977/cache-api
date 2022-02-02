@@ -5,13 +5,11 @@ import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import com.stc.cacheapi.exceptions.UnknownGeneralRedisException;
 import com.stc.cacheapi.parsers.BasicAuthenticationParser;
 import com.stc.cacheapi.services.CounterTrackingService;
-import io.lettuce.core.RedisCommandExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.Objects;
 
 import static com.stc.cacheapi.utils.ValidationUtils.*;
@@ -21,11 +19,9 @@ import static com.stc.cacheapi.utils.ValidationUtils.*;
 @Slf4j
 public class CounterTrackingController {
     private final CounterTrackingService counterTrackingService ;
-    final RedisConnection redisConnection ;
 
-    public CounterTrackingController(CounterTrackingService counterTrackingService, RedisConnection redisConnection) {
+    public CounterTrackingController(CounterTrackingService counterTrackingService) {
         this.counterTrackingService = counterTrackingService;
-        this.redisConnection = redisConnection;
     }
 
 
