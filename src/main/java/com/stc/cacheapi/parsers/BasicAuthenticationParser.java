@@ -25,7 +25,7 @@ public class BasicAuthenticationParser {
             String base64 = authorization.substring("Basic".length()).trim();
             byte[] decoded = Base64.getDecoder().decode(base64);
             String[] credentials = new String(decoded, StandardCharsets.UTF_8).split(":");
-            if (credentials.length != 2 || !StringUtils.hasText(credentials[0]) || !StringUtils.hasText(credentials[1]))
+            if (credentials.length != 2 /*|| !StringUtils.hasText(credentials[0]) || !StringUtils.hasText(credentials[1])*/)
                 throw new BasicAuthenticationParsingException("4007","username and password is required in Basic Authentication");
 
             this.username = credentials[0];

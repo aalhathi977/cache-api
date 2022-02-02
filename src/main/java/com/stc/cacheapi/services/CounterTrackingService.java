@@ -6,12 +6,10 @@ import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import com.stc.cacheapi.parsers.BasicAuthenticationParser;
 import io.lettuce.core.*;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
-import lombok.extern.slf4j.Slf4j;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import lombok.SneakyThrows;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -27,25 +24,30 @@ public class CounterTrackingService {
     final RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();
     private static final String SERVICE_PREFIX = "CT_";
     final RedisConnection redisConnection ;
+    final RedisClient redisClient ;
 
-    public CounterTrackingService(RedisConnection redisConnection) {
+    public CounterTrackingService(RedisConnection redisConnection, RedisClient redisClient) {
         this.redisConnection = redisConnection;
+        this.redisClient = redisClient;
     }
 
+    @SneakyThrows
     @Retryable(maxAttempts = 2, include = {RedisCommandExecutionException.class,RedisCommandTimeoutException.class}, backoff = @Backoff(value = 0))
-    public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser){
+    public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser) {
         RedisURI standalone = redisConnection.getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
-        RedisClient redisClient = RedisClient.create(standalone);
-        StatefulRedisConnection<String, String> connection = redisClient.connect();
-        RedisCommands<String, String> sync = connection.sync();
+        StatefulRedisConnection<String, String> connection = redisClient.connect(standalone);
+        RedisAsyncCommands<String, String> sync = connection.async();
 
 
         final String prefixedCounter = SERVICE_PREFIX + counter;
         if (Objects.nonNull(ttl)) {
-            sync.set(prefixedCounter, "230");
-            return sync.getex(prefixedCounter, GetExArgs.Builder.ex(ttl));
+            String getex = sync.getex(prefixedCounter, GetExArgs.Builder.ex(ttl)).get();
+            connection.close();
+            return getex ;
         } else {
-            return sync.get(prefixedCounter);
+            String get = sync.get(prefixedCounter).get();
+            connection.close();
+            return get ;
         }
     }
 
