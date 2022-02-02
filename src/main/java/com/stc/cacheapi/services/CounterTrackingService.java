@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 @Service
 public class CounterTrackingService {
@@ -33,21 +34,21 @@ public class CounterTrackingService {
 
     @SneakyThrows
     @Retryable(maxAttempts = 2, include = {RedisCommandExecutionException.class,RedisCommandTimeoutException.class}, backoff = @Backoff(value = 0))
-    public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser) {
+    public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser){
         RedisURI standalone = redisConnection.getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
         StatefulRedisConnection<String, String> connection = redisClient.connect(standalone);
         RedisAsyncCommands<String, String> sync = connection.async();
 
-
-        final String prefixedCounter = SERVICE_PREFIX + counter;
-        if (Objects.nonNull(ttl)) {
-            String getex = sync.getex(prefixedCounter, GetExArgs.Builder.ex(ttl)).get();
-            connection.close();
-            return getex ;
-        } else {
-            String get = sync.get(prefixedCounter).get();
-            connection.close();
-            return get ;
+        try {
+            final String prefixedCounter = SERVICE_PREFIX + counter;
+            if (Objects.nonNull(ttl)) {
+                return sync.getex(prefixedCounter, GetExArgs.Builder.ex(ttl)).get();
+            } else {
+                return sync.get(prefixedCounter).get();
+            }
+        }finally {
+            if (connection.isOpen())
+                connection.close();
         }
     }
 

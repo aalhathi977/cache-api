@@ -13,6 +13,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 @RestControllerAdvice
 public class ExceptionsHandler extends ResponseEntityExceptionHandler {
@@ -51,7 +52,6 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
         ));
     }
 
-
     @ExceptionHandler(MissingRequestHeaderException.class)
     ResponseEntity<?> missingRequestHeader(MissingRequestHeaderException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
@@ -72,6 +72,30 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 ));
     }
 
+
+    // THREAD EXCEPTION
+    @ExceptionHandler(ExecutionException.class)
+    ResponseEntity<?> executionExceptionHandler(ExecutionException e) {
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("x-error",e.getCause().getMessage())
+                .body(Map.of(
+                        "code", HttpStatus.INTERNAL_SERVER_ERROR.value() + "1",
+                        "message", e.getCause().getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InterruptedException.class)
+    ResponseEntity<?> interruptException(InterruptedException e) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("x-error",e.getMessage())
+                .body(Map.of(
+                        "code", HttpStatus.INTERNAL_SERVER_ERROR.value() + "2",
+                        "message", e.getMessage()
+                ));
+    }
 
     // handling BasicAuthenticationParsingException
     @Override
