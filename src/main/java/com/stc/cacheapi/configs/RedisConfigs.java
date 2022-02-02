@@ -18,15 +18,8 @@ public class RedisConfigs {
     }
 
     @Bean
-    RedisClient redisClient(){
-        return RedisClient.create();
-    }
-
-    @Bean
     public RetryListener retryListener1(RedisConnection redisConnection) {
         return new RedisConnectionRetryListener(redisConnection);
     }
-
-
 
 }

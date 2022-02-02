@@ -1,6 +1,5 @@
 package com.stc.cacheapi.exceptions;
 
-import io.lettuce.core.RedisCommandExecutionException;
 import io.lettuce.core.RedisException;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;

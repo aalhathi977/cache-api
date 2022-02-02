@@ -1,12 +1,15 @@
 package com.stc.cacheapi.configs;
 
+import com.stc.cacheapi.parsers.BasicAuthenticationParser;
+import com.stc.cacheapi.utils.CheckedFunction;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.internal.HostAndPort;
 import io.lettuce.core.sentinel.api.StatefulRedisSentinelConnection;
 import io.lettuce.core.sentinel.api.sync.RedisSentinelCommands;
+import lombok.SneakyThrows;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.stereotype.Component;
 
@@ -66,6 +69,19 @@ public class RedisConnection {
         this.standalonePort = Integer.parseInt(master.get("port"));
     }
 
+
+    @SneakyThrows
+    public String executeAsyncCommands (BasicAuthenticationParser parser , Integer dbIndex , CheckedFunction<RedisAsyncCommands<String,String>, String> callback){
+        RedisURI standalone = getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
+        RedisClient redisClient = RedisClient.create(standalone);
+        StatefulRedisConnection<String, String> connection = redisClient.connect();
+        RedisAsyncCommands<String, String> async = connection.async();
+        try {
+            return callback.apply(async);
+        }finally {
+            redisClient.shutdown();
+        }
+    }
 
 }
 

@@ -4,9 +4,10 @@ import com.stc.cacheapi.configs.RedisConnection;
 import com.stc.cacheapi.exceptions.KeyAlreadyExistException;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import com.stc.cacheapi.parsers.BasicAuthenticationParser;
-import io.lettuce.core.*;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.GetExArgs;
+import io.lettuce.core.RedisCommandExecutionException;
+import io.lettuce.core.RedisCommandTimeoutException;
+import io.lettuce.core.RedisException;
 import lombok.SneakyThrows;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -18,38 +19,30 @@ import org.springframework.stereotype.Service;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 
 @Service
 public class CounterTrackingService {
     final RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();
     private static final String SERVICE_PREFIX = "CT_";
     final RedisConnection redisConnection ;
-    final RedisClient redisClient ;
 
-    public CounterTrackingService(RedisConnection redisConnection, RedisClient redisClient) {
+
+    public CounterTrackingService(RedisConnection redisConnection) {
         this.redisConnection = redisConnection;
-        this.redisClient = redisClient;
     }
 
     @SneakyThrows
     @Retryable(maxAttempts = 2, include = {RedisCommandExecutionException.class,RedisCommandTimeoutException.class}, backoff = @Backoff(value = 0))
     public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser){
-        RedisURI standalone = redisConnection.getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
-        StatefulRedisConnection<String, String> connection = redisClient.connect(standalone);
-        RedisAsyncCommands<String, String> sync = connection.async();
+        final String prefixedCounter = SERVICE_PREFIX + counter;
 
-        try {
-            final String prefixedCounter = SERVICE_PREFIX + counter;
+        return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
             if (Objects.nonNull(ttl)) {
-                return sync.getex(prefixedCounter, GetExArgs.Builder.ex(ttl)).get();
+                return async.getex(prefixedCounter, GetExArgs.Builder.ex(ttl)).get();
             } else {
-                return sync.get(prefixedCounter).get();
+                return async.get(prefixedCounter).get();
             }
-        }finally {
-            if (connection.isOpen())
-                connection.close();
-        }
+        });
     }
 
     public Boolean update(Integer dbIndex ,String counter , Integer ttl){
