@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class BasicAuthenticationParsingException extends ApplicationException{
-    private String code = "4000";
+    private String code = "4010";
     private String message = "malformed Basic Authentication";
 }

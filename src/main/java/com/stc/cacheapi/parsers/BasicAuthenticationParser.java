@@ -19,19 +19,19 @@ public class BasicAuthenticationParser {
 
     public BasicAuthenticationParser(String authorization) {
         if (!authorization.startsWith("Basic"))
-            throw new BasicAuthenticationParsingException("4006","Malformed Basic Authentication");
+            throw new BasicAuthenticationParsingException("4016","Malformed Basic Authentication");
 
         try {
             String base64 = authorization.substring("Basic".length()).trim();
             byte[] decoded = Base64.getDecoder().decode(base64);
             String[] credentials = new String(decoded, StandardCharsets.UTF_8).split(":");
-            if (credentials.length != 2 || !StringUtils.hasText(credentials[0]) || !StringUtils.hasText(credentials[1]))
-                throw new BasicAuthenticationParsingException("4007","username and password is required in Basic Authentication");
+            if (credentials.length != 2 /*|| !StringUtils.hasText(credentials[0]) || !StringUtils.hasText(credentials[1])*/)
+                throw new BasicAuthenticationParsingException("4017","username and password is required in Basic Authentication");
 
             this.username = credentials[0];
             this.password = credentials[1];
         }catch (IllegalArgumentException e){
-            throw new BasicAuthenticationParsingException("4008","Malformed Basic Authentication");
+            throw new BasicAuthenticationParsingException("4018","Malformed Basic Authentication");
         }
     }
 }
