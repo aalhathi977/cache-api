@@ -14,11 +14,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @RestControllerAdvice
 public class ExceptionsHandler extends ResponseEntityExceptionHandler {
 
-
+    // 400 - Bad Request
     @ExceptionHandler(IllegalParamException.class)
     ResponseEntity<?> illegalHandler(IllegalParamException e) {
         return ResponseEntity.badRequest()
@@ -28,6 +29,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 ));
     }
 
+    // 404 - Not Found
     @ExceptionHandler(KeyNotFoundException.class)
     ResponseEntity<?> keyNotFoundHandler(KeyNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
@@ -36,6 +38,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
         ));
     }
 
+    // 409 - CONFLICT
     @ExceptionHandler(KeyAlreadyExistException.class)
     ResponseEntity<?> keyAlreadyExistHandler(KeyAlreadyExistException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
@@ -45,17 +48,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
     }
 
 
-
-    @ExceptionHandler(MissingRequestHeaderException.class)
-    ResponseEntity<?> missingRequestHeader(MissingRequestHeaderException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                "code", "4006",
-                "message", e.getHeaderName() + " ( Basic Authentication ) is required "
-        ));
-    }
-
-
-    // REDIS GENERAL EXCEPTION
+    // REDIS GENERAL EXCEPTION - 502 , 401
     @ExceptionHandler(RedisException.class)
     ResponseEntity<?> keyAlreadyExistHandler(RedisException e) {
 
@@ -66,7 +59,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 return ResponseEntity
                         .status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of(
-                                "code", HttpStatus.UNAUTHORIZED.value() + "1",
+                                "code", "4011",
                                 "message", "Invalid redis username or password"
                         ));
             }
@@ -83,6 +76,17 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
 
 
     // 500 - Internal Server Error
+    @ExceptionHandler(UnknownGeneralRedisException.class)
+    ResponseEntity<?> unknownGeneralRedisException(UnknownGeneralRedisException e) {
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "code", e.getCode(),
+                        "message", e.getMessage()
+                ));
+    }
+
     @ExceptionHandler(ExecutionException.class)
     ResponseEntity<?> executionExceptionHandler(ExecutionException e) {
 
@@ -106,6 +110,16 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(TimeoutException.class)
+    ResponseEntity<?> interruptException(TimeoutException e) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("x-error",e.getMessage())
+                .body(Map.of(
+                        "code", HttpStatus.INTERNAL_SERVER_ERROR.value() + "3",
+                        "message", e.getMessage()
+                ));
+    }
 
 
     // 401 - unauthorized
@@ -114,6 +128,14 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                 "code", e.getCode(),
                 "message", e.getMessage()
+        ));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    ResponseEntity<?> missingRequestHeader(MissingRequestHeaderException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "code", "4012",
+                "message", e.getHeaderName() + " ( Basic Authentication ) is required "
         ));
     }
 

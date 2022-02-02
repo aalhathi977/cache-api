@@ -28,6 +28,8 @@ public class RedisConnection {
     private String masterName ;
     private String masterPassword ;
 
+
+
     public RedisConnection(RedisProperties redisProperties) {
         this.masterName = redisProperties.getSentinel().getMaster();
         this.masterPassword = redisProperties.getSentinel().getPassword();
@@ -71,7 +73,7 @@ public class RedisConnection {
 
 
     @SneakyThrows
-    public String executeAsyncCommands (BasicAuthenticationParser parser , Integer dbIndex , CheckedFunction<RedisAsyncCommands<String,String>, String> callback){
+    public Object executeAsyncCommands (BasicAuthenticationParser parser , Integer dbIndex , CheckedFunction<RedisAsyncCommands<String,String>, Object> callback){
         RedisURI standalone = getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
         RedisClient redisClient = RedisClient.create(standalone);
         StatefulRedisConnection<String, String> connection = redisClient.connect();
