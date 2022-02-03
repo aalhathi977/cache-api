@@ -3,6 +3,7 @@ package com.stc.cacheapi.listeners;
 import com.stc.cacheapi.configs.RedisConnection;
 import io.lettuce.core.RedisCommandExecutionException;
 import io.lettuce.core.RedisCommandTimeoutException;
+import io.lettuce.core.RedisConnectionException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.RetryCallback;
@@ -37,21 +38,18 @@ public class RedisConnectionRetryListener implements RetryListener {
 
     @Override
     public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-        // new master is elected , previous master is slave --> READONLY
-        if (context.getRetryCount() == 1 && throwable instanceof RedisCommandExecutionException ) {
-            // log the issue
-            log.error("Redis Connection with master failed with READONLY message , will retry with sentinel ", throwable);
+        // make sure it is first try
+        if (context.getRetryCount() == 1) {
+            if (    throwable instanceof RedisCommandExecutionException || // new master is elected , previous master is slave --> READONLY
+                    throwable instanceof RedisConnectionException || // new master is elected , previous master is still down --> refuse to connect
+                    throwable.getCause() instanceof RedisCommandTimeoutException) // new master is elected , previous master is still down --> timeout
+            {
+                // log the issue
+                log.error("Redis Connection with master failed , will retry with sentinel ", throwable);
 
-            // update sentinel
-            redisConnection.updateConnectionDetails();
-        }
-        // new master is elected , previous master is still down --> timeout
-        else if (context.getRetryCount() == 1 && throwable.getCause() instanceof RedisCommandTimeoutException){
-            // log the issue
-            log.error("Redis Connection with master failed with connect timeout , will retry with sentinel ", throwable);
-
-            // update sentinel
-            redisConnection.updateConnectionDetails();
+                // update sentinel
+                redisConnection.updateConnectionDetails();
+            }
         }
     }
 }

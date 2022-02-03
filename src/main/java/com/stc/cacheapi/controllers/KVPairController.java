@@ -2,6 +2,7 @@ package com.stc.cacheapi.controllers;
 
 import com.stc.cacheapi.exceptions.KeyAlreadyExistException;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
+import com.stc.cacheapi.parsers.BasicAuthenticationParser;
 import com.stc.cacheapi.services.KVPairService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,12 +22,16 @@ public class KVPairController {
         this.kvPairService = kvPairService;
     }
 
+
+
     @GetMapping
-    ResponseEntity<?> get(@PathVariable String key, String ttl) {
+    ResponseEntity<?> get(@PathVariable("db_index") String dbIndex , @PathVariable String key, String ttl ,
+                          @RequestHeader(value = "Authorization" ) BasicAuthenticationParser parser) {
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
+        Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
         String sanitized_key = sanitizeKey(key);
 
-        Object result = kvPairService.get(sanitized_key,sanitized_ttl);
+        Object result = kvPairService.get(sanitized_dbIndex,sanitized_key,sanitized_ttl,parser);
 
         if (Objects.isNull(result))
             throw new KeyNotFoundException("4043");
@@ -35,12 +40,14 @@ public class KVPairController {
     }
 
     @PutMapping
-    ResponseEntity<?> put(@PathVariable String key, String ttl , @RequestBody(required = false) String body ) {
+    ResponseEntity<?> put(@PathVariable("db_index") String dbIndex , @PathVariable String key, String ttl ,
+                          @RequestBody(required = false) String body , @RequestHeader(value = "Authorization" ) BasicAuthenticationParser parser) {
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
         String sanitized_key = sanitizeKey(key);
         String sanitized_value = sanitizeValue(body);
+        Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
 
-        Boolean isUpdated = kvPairService.update(sanitized_key, sanitized_value, sanitized_ttl);
+        Boolean isUpdated = kvPairService.update(sanitized_dbIndex,sanitized_key, sanitized_value, sanitized_ttl,parser);
 
         if (isUpdated)
             return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -49,14 +56,16 @@ public class KVPairController {
     }
 
     @PostMapping
-    ResponseEntity<?> post(@PathVariable String key, String ttl , @RequestBody(required = false) String body ) {
+    ResponseEntity<?> post(@PathVariable("db_index") String dbIndex , @PathVariable String key, String ttl ,
+                           @RequestBody(required = false) String body , @RequestHeader(value = "Authorization" ) BasicAuthenticationParser parser) {
         Integer sanitized_ttl = sanitizeTTL(ttl) ;
         if (sanitized_ttl == null)
             sanitized_ttl = 900 ;
         String sanitized_key = sanitizeKey(key);
+        Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
         String sanitized_value = sanitizeValue(body);
 
-        Boolean isCreated = kvPairService.create(sanitized_key, sanitized_value, sanitized_ttl);
+        Boolean isCreated = kvPairService.create(sanitized_dbIndex,sanitized_key, sanitized_value, sanitized_ttl,parser);
 
         if (isCreated)
             return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -65,10 +74,12 @@ public class KVPairController {
     }
 
     @DeleteMapping
-    ResponseEntity<?> delete(@PathVariable String key) {
+    ResponseEntity<?> delete(@PathVariable("db_index") String dbIndex , @PathVariable String key ,
+                             @RequestHeader(value = "Authorization" ) BasicAuthenticationParser parser) {
         String sanitized_key = sanitizeKey(key);
+        Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
 
-        Boolean isDeleted = kvPairService.delete(sanitized_key);
+        Boolean isDeleted = kvPairService.delete(sanitized_dbIndex,sanitized_key,parser);
 
         if (isDeleted)
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
