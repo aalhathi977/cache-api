@@ -69,6 +69,7 @@ public class RedisConnection {
         Map<String, String> master = sync.master(masterName);
         this.standaloneHost = master.get("ip");
         this.standalonePort = Integer.parseInt(master.get("port"));
+        redisClient.shutdown();
     }
 
 
