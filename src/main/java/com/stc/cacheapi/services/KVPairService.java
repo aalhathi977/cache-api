@@ -4,6 +4,7 @@ import com.stc.cacheapi.configs.RedisConnection;
 import com.stc.cacheapi.exceptions.KeyNotFoundException;
 import com.stc.cacheapi.parsers.BasicAuthenticationParser;
 import io.lettuce.core.*;
+import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.retry.annotation.Backoff;
@@ -62,9 +63,12 @@ public class KVPairService {
         }
     }
 
-    public Boolean create(Integer dbIndex , String key , String value , Integer ttl, BasicAuthenticationParser parser){
+    public Object create(Integer dbIndex , String key , String value , Integer ttl, BasicAuthenticationParser parser){
         final String prefixedKey = SERVICE_PREFIX + key;
-        return redisTemplate.opsForValue().setIfAbsent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
+
+        return redisConnection.executeAsyncCommands(parser,dbIndex,
+                (async) -> async.set(prefixedKey, value,SetArgs.Builder.nx().ex(ttl)).get()
+        );
     }
 
     public Boolean delete(Integer dbIndex , String key, BasicAuthenticationParser parser){

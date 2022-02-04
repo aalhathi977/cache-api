@@ -65,9 +65,9 @@ public class KVPairController {
         Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
         String sanitized_value = sanitizeValue(body);
 
-        Boolean isCreated = kvPairService.create(sanitized_dbIndex,sanitized_key, sanitized_value, sanitized_ttl,parser);
+        Object isCreated = kvPairService.create(sanitized_dbIndex,sanitized_key, sanitized_value, sanitized_ttl,parser);
 
-        if (isCreated)
+        if (Boolean.FALSE.equals(isCreated))
             return ResponseEntity.status(HttpStatus.CREATED).build();
         else
             throw new KeyAlreadyExistException("4092");
