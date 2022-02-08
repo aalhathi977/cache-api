@@ -52,28 +52,35 @@ public class KVPairService {
     public Boolean update(Integer dbIndex , String key , String value , Integer ttl , BasicAuthenticationParser parser){
         final String prefixedKey = SERVICE_PREFIX + key;
 
+        Object isUpdated = redisConnection.executeAsyncCommands(parser,dbIndex, (async) -> {
+            if (Objects.nonNull(ttl))
+                return async.set(prefixedKey, value, SetArgs.Builder.xx().ex(ttl))
+                        .get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
+            else {
+                return async.set(prefixedKey, value, SetArgs.Builder.xx().keepttl())
+                        .get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
+            }
+        });
 
-
-
-        if (Objects.nonNull(ttl))
-            return redisTemplate.opsForValue().setIfPresent(prefixedKey, value ,ttl, TimeUnit.SECONDS);
-        else {
-            RedisScript<Boolean> script = RedisScript.of("return redis.call('SET', KEYS[1], ARGV[1], 'XX','KEEPTTL')",Boolean.class);
-            return redisTemplate.execute(script, Collections.singletonList(prefixedKey), value);
-        }
+        return Objects.nonNull(isUpdated) && isUpdated.equals("OK") ;
     }
 
     public Object create(Integer dbIndex , String key , String value , Integer ttl, BasicAuthenticationParser parser){
         final String prefixedKey = SERVICE_PREFIX + key;
 
-        return redisConnection.executeAsyncCommands(parser,dbIndex,
-                (async) -> async.set(prefixedKey, value,SetArgs.Builder.nx().ex(ttl)).get()
+        Object isCreated = redisConnection.executeAsyncCommands(parser,dbIndex,
+                (async) -> async.set(prefixedKey, value, SetArgs.Builder.nx().ex(ttl)).get(FUTURE_TIMEOUT,TimeUnit.SECONDS)
         );
+
+        return Objects.nonNull(isCreated) && isCreated.equals("OK") ;
     }
 
-    public Boolean delete(Integer dbIndex , String key, BasicAuthenticationParser parser){
+    public Object delete(Integer dbIndex , String key, BasicAuthenticationParser parser){
         final String prefixedKey = SERVICE_PREFIX + key;
-        return redisTemplate.unlink(prefixedKey);
+        return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
+            RedisFuture<Long> value = async.unlink(prefixedKey);
+            return ( value.get(FUTURE_TIMEOUT, TimeUnit.SECONDS) > 0 ) ;
+        });
     }
 
 

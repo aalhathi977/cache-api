@@ -49,7 +49,7 @@ public class KVPairController {
 
         Boolean isUpdated = kvPairService.update(sanitized_dbIndex,sanitized_key, sanitized_value, sanitized_ttl,parser);
 
-        if (isUpdated)
+        if (Boolean.TRUE.equals(isUpdated))
             return ResponseEntity.status(HttpStatus.CREATED).build();
         else
             throw new KeyNotFoundException("4044");
@@ -67,7 +67,7 @@ public class KVPairController {
 
         Object isCreated = kvPairService.create(sanitized_dbIndex,sanitized_key, sanitized_value, sanitized_ttl,parser);
 
-        if (Boolean.FALSE.equals(isCreated))
+        if (Boolean.TRUE.equals(isCreated))
             return ResponseEntity.status(HttpStatus.CREATED).build();
         else
             throw new KeyAlreadyExistException("4092");
@@ -79,9 +79,9 @@ public class KVPairController {
         String sanitized_key = sanitizeKey(key);
         Integer sanitized_dbIndex = sanitizeDBIndex(dbIndex);
 
-        Boolean isDeleted = kvPairService.delete(sanitized_dbIndex,sanitized_key,parser);
+        Object isDeleted = kvPairService.delete(sanitized_dbIndex,sanitized_key,parser);
 
-        if (isDeleted)
+        if (Boolean.TRUE.equals(isDeleted))
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         else
             throw new KeyNotFoundException("4045");
