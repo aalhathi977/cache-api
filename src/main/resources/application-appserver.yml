@@ -1,11 +1,11 @@
-logging:
-  level:
-    root : off
-    com:
-      stc:
-        cacheapi: ERROR
-  file:
-    name: ${APP_LOGGING_FOLDER}/cache-api.log
+#logging:
+#  level:
+#    root : off
+#    com:
+#      stc:
+#        cacheapi: ERROR
+#  file:
+#    name: ${APP_LOGGING_FOLDER}/cache-api.log
 spring:
   redis:
     sentinel:
