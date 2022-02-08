@@ -30,6 +30,17 @@ public class ValidationUtils {
 
     }
 
+    public static Integer sanitizeDBIndex(String dbIndex){
+        if (Objects.nonNull(dbIndex))
+            // eliminate text and negative numbers and greater than 16
+            if (!ValidationUtils.isNumeric(dbIndex) || Integer.parseInt(dbIndex) < 0 || Integer.parseInt(dbIndex) > 15 )
+                throw new IllegalParamException("4003", "db_index is incorrect");
+            else
+                return Integer.parseInt(dbIndex);
+        else
+            throw new IllegalParamException("4002","db_index is missing");
+    }
+
     public static String sanitizeKey(String key){
         if (Objects.isNull(key) || !StringUtils.hasText(key))
             throw new IllegalParamException("4004", "key is missing or incorrect");
