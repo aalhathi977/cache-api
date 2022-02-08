@@ -58,6 +58,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
             if (e.getCause().getMessage().contains("WRONGPASS")) {
                 return ResponseEntity
                         .status(HttpStatus.UNAUTHORIZED)
+                        .header("x-error",e.getMessage())
                         .body(Map.of(
                                 "code", "4011",
                                 "message", "Invalid redis username or password"
@@ -81,6 +82,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("x-error",e.getMessage())
                 .body(Map.of(
                         "code", e.getCode(),
                         "message", e.getMessage()

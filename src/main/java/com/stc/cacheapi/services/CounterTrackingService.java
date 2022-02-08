@@ -24,9 +24,7 @@ public class CounterTrackingService {
         this.redisConnection = redisConnection;
     }
 
-
-    @Retryable(maxAttempts = 2,
-            include = { RedisCommandExecutionException.class, RedisCommandTimeoutException.class},
+    @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisConnectionException.class , RedisCommandTimeoutException.class},
             backoff = @Backoff(value = 0))
     public Object get(Integer dbIndex , String counter , Integer ttl, BasicAuthenticationParser parser){
         final String prefixedCounter = SERVICE_PREFIX + counter;
@@ -40,8 +38,9 @@ public class CounterTrackingService {
         });
     }
 
-    @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisCommandTimeoutException.class
-    }, backoff = @Backoff(value = 0))
+
+    @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisConnectionException.class , RedisCommandTimeoutException.class},
+            backoff = @Backoff(value = 0))
     public Object update(Integer dbIndex ,String counter , Integer ttl ,BasicAuthenticationParser parser){
         final String prefixedCounter = SERVICE_PREFIX + counter;
 
@@ -66,8 +65,7 @@ public class CounterTrackingService {
     }
 
 
-    @Retryable(maxAttempts = 2,
-            include = { RedisCommandExecutionException.class, RedisCommandTimeoutException.class },
+    @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisConnectionException.class , RedisCommandTimeoutException.class },
             backoff = @Backoff(value = 0))
     public Object create(Integer dbIndex , String counter , Integer ttl,BasicAuthenticationParser parser){
         final String prefixedCounter = SERVICE_PREFIX + counter;
@@ -88,8 +86,7 @@ public class CounterTrackingService {
     }
 
 
-    @Retryable(maxAttempts = 2,
-            include = { RedisCommandExecutionException.class, RedisCommandTimeoutException.class },
+    @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisConnectionException.class , RedisCommandTimeoutException.class },
             backoff = @Backoff(value = 0))
     public Object delete(Integer dbIndex ,String counter , BasicAuthenticationParser parser){
         final String prefixedCounter = SERVICE_PREFIX + counter;
