@@ -1,11 +1,11 @@
-logging:
-  level:
-    io:
-      lettuce:
-        core: DEBUG
 spring:
   redis:
     sentinel:
       master: mymaster
       nodes: localhost:5000
     connect-timeout: 2000
+logging:
+  level:
+    io:
+      lettuce:
+        core: DEBUG

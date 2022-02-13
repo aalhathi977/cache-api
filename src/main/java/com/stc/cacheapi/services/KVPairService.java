@@ -8,6 +8,7 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -28,10 +29,10 @@ public class KVPairService {
 
         return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
             if (Objects.nonNull(ttl)) {
-                return async.getex(prefixedKey, GetExArgs.Builder.ex(ttl)).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
-            } else {
-                return async.get(prefixedKey).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
+                if (!async.expire(prefixedKey, Duration.ofSeconds(ttl)).get())
+                    return null;
             }
+            return async.get(prefixedKey).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
         });
     }
 
