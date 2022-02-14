@@ -30,10 +30,7 @@ public class RedisConnectionRetryListener implements RetryListener {
     @SneakyThrows
     @Override
     public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-        if (Objects.nonNull(throwable)){
-            // log the issue , recalling sentinel didn't fix the issue
-            log.error("Connection Redis Attempts Consumed ", throwable);
-        }
+
     }
 
     @Override
@@ -44,8 +41,7 @@ public class RedisConnectionRetryListener implements RetryListener {
                     throwable instanceof RedisConnectionException || // new master is elected , previous master is still down --> refuse to connect
                     throwable.getCause() instanceof RedisCommandTimeoutException) // new master is elected , previous master is still down --> timeout
             {
-                // log the issue
-                log.error("Redis Connection with master failed , will retry with sentinel ", throwable);
+
 
                 // update sentinel
                 redisConnection.updateConnectionDetails();
