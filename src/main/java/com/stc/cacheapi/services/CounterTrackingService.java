@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class CounterTrackingService {
-    private static final String SERVICE_PREFIX = "CT_";
+    private static final String SERVICE_PREFIX = "CT/";
     final RedisConnection redisConnection ;
     private static final int FUTURE_TIMEOUT = 30 ; // SECONDS
 
