@@ -32,8 +32,8 @@ public class ValidationUtils {
 
     public static Integer sanitizeDBIndex(String dbIndex){
         if (Objects.nonNull(dbIndex))
-            // eliminate text and negative numbers and greater than 16
-            if (!ValidationUtils.isNumeric(dbIndex) || Integer.parseInt(dbIndex) < 0 || Integer.parseInt(dbIndex) > 15 )
+            // eliminate text and negative numbers
+            if (!ValidationUtils.isNumeric(dbIndex) || Integer.parseInt(dbIndex) < 0)
                 throw new IllegalParamException("4003", "db_index is incorrect");
             else
                 return Integer.parseInt(dbIndex);

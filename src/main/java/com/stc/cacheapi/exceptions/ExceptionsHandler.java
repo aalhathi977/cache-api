@@ -5,6 +5,7 @@ import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -51,42 +52,29 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
 
     // REDIS GENERAL EXCEPTION - 502 , 401
     @ExceptionHandler(RedisException.class)
-    ResponseEntity<?> keyAlreadyExistHandler(RedisException e) {
-
-        // handler caused exception
-        if (Objects.nonNull(e.getCause()) && Objects.nonNull(e.getCause().getMessage())) {
-            // user password is wrong
-            if (e.getCause().getMessage().contains("WRONGPASS")) {
-                return ResponseEntity
-                        .status(HttpStatus.UNAUTHORIZED)
-                        .header("x-error",e.getCause().getMessage())
-                        .body(Map.of(
-                                "code", "4011",
-                                "message", "Invalid redis username or password"
-                        ));
-            }
-        }
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_GATEWAY)
-                .header("x-error",e.getMessage())
-                .body(Map.of(
-                        "code", HttpStatus.BAD_GATEWAY.value() + "1",
-                        "message", e.getMessage()
-                ));
+    ResponseEntity<?> redisExceptionHandler(RedisException e) {
+        String message = Objects.nonNull(e.getCause()) ? e.getCause().getMessage() : e.getMessage();
+        if (StringUtils.hasText(message) && message.contains("WRONGPASS"))
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header("x-error",message)
+                    .body(Map.of("code", "4011", "message", "Invalid redis username or password"));
+        else
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .header("x-error",message)
+                .body(Map.of("code", HttpStatus.BAD_GATEWAY.value() + "1", "message", message));
     }
 
 
     // 500 - Internal Server Error
     @ExceptionHandler(UnknownGeneralRedisException.class)
     ResponseEntity<?> unknownGeneralRedisException(UnknownGeneralRedisException e) {
-
+        String message = Objects.nonNull(e.getCause()) ? e.getCause().getMessage() : e.getMessage();
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .header("x-error",e.getMessage())
+                .header("x-error",message)
                 .body(Map.of(
                         "code", e.getCode(),
-                        "message", e.getMessage()
+                        "message", message
                 ));
     }
 
