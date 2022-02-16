@@ -55,7 +55,7 @@ public class KVPairController {
             throw new KeyNotFoundException("4044");
     }
 
-    @PostMapping
+    @PostMapping(consumes = "text/plain")
     ResponseEntity<?> post(@PathVariable("db_index") String dbIndex , @PathVariable String key, String ttl ,
                            @RequestBody(required = false) String body , @RequestHeader(value = "Authorization" ) BasicAuthenticationParser parser) {
         Integer sanitized_ttl = sanitizeTTL(ttl) ;

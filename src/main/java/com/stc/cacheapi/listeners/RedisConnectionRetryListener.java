@@ -29,9 +29,7 @@ public class RedisConnectionRetryListener implements RetryListener {
 
     @SneakyThrows
     @Override
-    public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-
-    }
+    public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {}
 
     @Override
     public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
@@ -41,7 +39,6 @@ public class RedisConnectionRetryListener implements RetryListener {
                     throwable instanceof RedisConnectionException || // new master is elected , previous master is still down --> refuse to connect
                     throwable.getCause() instanceof RedisCommandTimeoutException) // new master is elected , previous master is still down --> timeout
             {
-
 
                 // update sentinel
                 redisConnection.updateConnectionDetails();
