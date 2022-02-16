@@ -5,14 +5,10 @@ import io.lettuce.core.RedisCommandExecutionException;
 import io.lettuce.core.RedisCommandTimeoutException;
 import io.lettuce.core.RedisConnectionException;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 
-import java.util.Objects;
-
-@Slf4j
 public class RedisConnectionRetryListener implements RetryListener {
 
     final RedisConnection redisConnection;

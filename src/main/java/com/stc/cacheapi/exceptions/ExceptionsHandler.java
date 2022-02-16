@@ -153,7 +153,7 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(Map.of(
                         "code", "4151",
-                        "message", "'Content-Type: text/plain' is required "
+                        "message", "'Content-Type' MUST be text/plain ."
                 ));
     }
 }
