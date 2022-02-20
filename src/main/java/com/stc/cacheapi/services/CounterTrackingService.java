@@ -41,7 +41,7 @@ public class CounterTrackingService {
 
     @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisConnectionException.class , RedisCommandTimeoutException.class},
             backoff = @Backoff(value = 0))
-    public Object update(Integer dbIndex ,String counter , Integer ttl ,BasicAuthenticationParser parser){
+    public Object update(Integer dbIndex ,String counter , Long jump ,Integer ttl ,BasicAuthenticationParser parser){
         final String prefixedCounter = SERVICE_PREFIX + counter;
 
         return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
@@ -51,14 +51,10 @@ public class CounterTrackingService {
             if (Boolean.FALSE.equals(exists))
                 throw new KeyNotFoundException("4041","the provided counter does not exist");
             else {
-                RedisFuture<Long> value = async.incr(prefixedCounter);
-                if (Objects.nonNull(ttl)) {
-                    RedisFuture<Boolean> isTtlSet = async.expire(prefixedCounter, ttl);
-                    return ( value.get(FUTURE_TIMEOUT,TimeUnit.SECONDS) > 0 &&
-                            isTtlSet.get(FUTURE_TIMEOUT,TimeUnit.SECONDS) ) ;
-                }else {
-                    return ( value.get(FUTURE_TIMEOUT,TimeUnit.SECONDS) > 0 ) ;
-                }
+                RedisFuture<Long> value = async.incrby(prefixedCounter,jump);
+                if (Objects.nonNull(ttl))
+                    async.expire(prefixedCounter, ttl);
+                return value.get(FUTURE_TIMEOUT,TimeUnit.SECONDS) ;
             }
         });
 
@@ -67,7 +63,7 @@ public class CounterTrackingService {
 
     @Retryable(maxAttempts = 2, include = { RedisCommandExecutionException.class, RedisConnectionException.class , RedisCommandTimeoutException.class },
             backoff = @Backoff(value = 0))
-    public Object create(Integer dbIndex , String counter , Integer ttl,BasicAuthenticationParser parser){
+    public Object create(Integer dbIndex , String counter , Long start, Integer ttl,BasicAuthenticationParser parser){
         final String prefixedCounter = SERVICE_PREFIX + counter;
 
         return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
@@ -77,7 +73,7 @@ public class CounterTrackingService {
             if (Boolean.TRUE.equals(exists))
                 throw new KeyAlreadyExistException("4091","the provided counter already exist");
             else {
-                RedisFuture<Long> value = async.incr(prefixedCounter);
+                RedisFuture<Long> value = async.incrby(prefixedCounter,start);
                 RedisFuture<Boolean> isTtlSet = async.expire(prefixedCounter, ttl);
                 return ( value.get(FUTURE_TIMEOUT, TimeUnit.SECONDS) > 0 &&
                         isTtlSet.get(FUTURE_TIMEOUT, TimeUnit.SECONDS) ) ;
