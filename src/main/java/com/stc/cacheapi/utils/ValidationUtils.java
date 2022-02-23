@@ -7,7 +7,7 @@ import java.util.Objects;
 
 public class ValidationUtils {
 
-    public static boolean isNumeric(String str) {
+    public static boolean isInt(String str) {
         if (!StringUtils.hasText(str)) {
             return false;
         }
@@ -19,9 +19,21 @@ public class ValidationUtils {
         return true;
     }
 
+    public static boolean isLong(String str) {
+        if (!StringUtils.hasText(str)) {
+            return false;
+        }
+        try {
+            Long.parseLong(str);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
     public static Integer sanitizeTTL(String ttl){
         if (Objects.nonNull(ttl))
-            if (!ValidationUtils.isNumeric(ttl) || Integer.parseInt(ttl) <= 0) // eliminate text and negative numbers
+            if (!ValidationUtils.isInt(ttl) || Long.parseLong(ttl) <= 0) // eliminate text and negative numbers
                 throw new IllegalParamException("4001", "TTL need to be a positive number , to delete a key use delete service");
             else
                 return Integer.parseInt(ttl);
@@ -30,10 +42,27 @@ public class ValidationUtils {
 
     }
 
+    // start - Counter Service - post
+    public static Long sanitizeStart(String start){
+        if (!ValidationUtils.isLong(start)) // eliminate text
+            throw new IllegalParamException("4007", "body must be an integer between " + Long.MAX_VALUE + " and " + Long.MIN_VALUE + " .");
+        else
+            return Long.parseLong(start);
+    }
+
+    // jump - Counter Service - put
+    public static Long sanitizeJump(String jump){
+        if (!ValidationUtils.isLong(jump)) // eliminate text
+            throw new IllegalParamException("4006", "body must be an integer between " + Long.MAX_VALUE + " and " + Long.MIN_VALUE + " .");
+        else
+            return Long.parseLong(jump);
+    }
+
+
     public static Integer sanitizeDBIndex(String dbIndex){
         if (Objects.nonNull(dbIndex))
-            // eliminate text and negative numbers and greater than 16
-            if (!ValidationUtils.isNumeric(dbIndex) || Integer.parseInt(dbIndex) < 0 || Integer.parseInt(dbIndex) > 15 )
+            // eliminate text and negative numbers
+            if (!ValidationUtils.isInt(dbIndex) || Integer.parseInt(dbIndex) < 0)
                 throw new IllegalParamException("4003", "db_index is incorrect");
             else
                 return Integer.parseInt(dbIndex);
