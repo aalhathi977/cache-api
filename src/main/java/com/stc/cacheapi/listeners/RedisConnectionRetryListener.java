@@ -9,6 +9,8 @@ import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 
+import java.util.ArrayList;
+
 public class RedisConnectionRetryListener implements RetryListener {
 
     final RedisConnection redisConnection;
@@ -31,13 +33,26 @@ public class RedisConnectionRetryListener implements RetryListener {
     public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
         // make sure it is first try
         if (context.getRetryCount() == 1) {
-            if (    throwable instanceof RedisCommandExecutionException || // new master is elected , previous master is slave --> READONLY
-                    throwable instanceof RedisConnectionException || // new master is elected , previous master is still down --> refuse to connect
-                    throwable.getCause() instanceof RedisCommandTimeoutException) // new master is elected , previous master is still down --> timeout
-            {
 
-                // update sentinel
-                redisConnection.updateConnectionDetails();
+            // some time redis exception is assigned as cause in the exception
+            ArrayList<Throwable> causes = new ArrayList<>();
+            causes.add(throwable);
+            if ( throwable.getCause() != null) {
+                causes.add(throwable.getCause());
+                if (throwable.getCause().getCause() != null)
+                    causes.add(throwable.getCause().getCause());
+            }
+
+            for (Throwable cause: causes) {
+                if (    cause instanceof RedisCommandExecutionException || // new master is elected , previous master is slave --> READONLY
+                        cause instanceof RedisConnectionException || // new master is elected , previous master is still down --> refuse to connect
+                        cause instanceof RedisCommandTimeoutException) // new master is elected , previous master is still down --> timeout
+                {
+
+                    // update sentinel
+                    redisConnection.updateConnectionDetails();
+                    break;
+                }
             }
         }
     }
