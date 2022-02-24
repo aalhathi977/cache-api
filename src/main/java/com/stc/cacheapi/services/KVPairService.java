@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class KVPairService {
     private static final String SERVICE_PREFIX = "KV/";
     final RedisConnection redisConnection ;
-    private static final int FUTURE_TIMEOUT = 30 ; // SECONDS
+    private static final int FUTURE_TIMEOUT = 20 ; // SECONDS
 
     public KVPairService(RedisConnection redisConnection) {
         this.redisConnection = redisConnection;
@@ -29,7 +29,7 @@ public class KVPairService {
 
         return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
             if (Objects.nonNull(ttl)) {
-                if (!async.expire(prefixedKey, Duration.ofSeconds(ttl)).get())
+                if (!async.expire(prefixedKey, Duration.ofSeconds(ttl)).get(FUTURE_TIMEOUT,TimeUnit.SECONDS))
                     return null;
             }
             return async.get(prefixedKey).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);

@@ -10,6 +10,7 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class CounterTrackingService {
     private static final String SERVICE_PREFIX = "CT/";
     final RedisConnection redisConnection ;
-    private static final int FUTURE_TIMEOUT = 30 ; // SECONDS
+    private static final int FUTURE_TIMEOUT = 20 ; // SECONDS
 
 
     public CounterTrackingService(RedisConnection redisConnection) {
@@ -31,10 +32,10 @@ public class CounterTrackingService {
 
         return redisConnection.executeAsyncCommands(parser,dbIndex,(async) -> {
             if (Objects.nonNull(ttl)) {
-                return async.getex(prefixedCounter, GetExArgs.Builder.ex(ttl)).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
-            } else {
-                return async.get(prefixedCounter).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
+                if (!async.expire(prefixedCounter, Duration.ofSeconds(ttl)).get(FUTURE_TIMEOUT,TimeUnit.SECONDS))
+                    return null;
             }
+            return async.get(prefixedCounter).get(FUTURE_TIMEOUT,TimeUnit.SECONDS);
         });
     }
 
