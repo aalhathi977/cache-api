@@ -28,15 +28,18 @@ public class RedisConnection {
     private String masterName ;
     private String masterPassword ;
 
+    // redis client bean
+    RedisClient redisClient;
 
 
-    public RedisConnection(RedisProperties redisProperties) {
+    public RedisConnection(RedisProperties redisProperties , RedisClient redisClient) {
         this.masterName = redisProperties.getSentinel().getMaster();
         this.masterPassword = redisProperties.getSentinel().getPassword();
         this.connectTimeout = redisProperties.getConnectTimeout();
         String firstNode = redisProperties.getSentinel().getNodes().get(0);
         this.sentinelHost = HostAndPort.parse(firstNode).getHostText();
         this.sentinelPort = HostAndPort.parse(firstNode).getPort();
+        this.redisClient = redisClient ;
     }
 
 
@@ -58,31 +61,28 @@ public class RedisConnection {
 
     public void updateConnectionDetails (){
         // hit sentinel and get the master ip and port --> set them in ip and port
-        RedisClient redisClient = RedisClient.create(
-                RedisURI.Builder
+        RedisURI sentinel = RedisURI.Builder
                         .sentinel(sentinelHost,sentinelPort,masterName,masterPassword)
                         .withTimeout(connectTimeout)
-                        .build()
-        );
-        StatefulRedisSentinelConnection<String, String> connection = redisClient.connectSentinel();
+                        .build();
+        StatefulRedisSentinelConnection<String, String> connection = redisClient.connectSentinel(sentinel);
         RedisSentinelCommands<String, String> sync = connection.sync();
         Map<String, String> master = sync.master(masterName);
         this.standaloneHost = master.get("ip");
         this.standalonePort = Integer.parseInt(master.get("port"));
-        redisClient.shutdown();
+        connection.close();
     }
 
 
     @SneakyThrows
     public Object executeAsyncCommands (BasicAuthenticationParser parser , Integer dbIndex , CheckedFunction<RedisAsyncCommands<String,String>, Object> callback){
         RedisURI standalone = getConnectionDetails(parser.getUsername(),parser.getPassword(),dbIndex);
-        RedisClient redisClient = RedisClient.create(standalone);
-        StatefulRedisConnection<String, String> connection = redisClient.connect();
+        StatefulRedisConnection<String, String> connection = redisClient.connect(standalone);
         RedisAsyncCommands<String, String> async = connection.async();
         try {
             return callback.apply(async);
         }finally {
-            redisClient.shutdown();
+            connection.close();
         }
     }
 

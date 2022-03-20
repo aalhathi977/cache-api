@@ -1,6 +1,7 @@
 package com.stc.cacheapi.configs;
 
 import com.stc.cacheapi.listeners.RedisConnectionRetryListener;
+import io.lettuce.core.RedisClient;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,8 +13,13 @@ import org.springframework.retry.annotation.EnableRetry;
 public class RedisConfigs {
 
     @Bean
-    RedisConnection redisConnect(RedisProperties redisProperties){
-        return new RedisConnection(redisProperties);
+    RedisConnection redisConnect(RedisProperties redisProperties, RedisClient redisClient){
+        return new RedisConnection(redisProperties,redisClient);
+    }
+
+    @Bean
+    RedisClient redisClient(){
+        return RedisClient.create();
     }
 
     @Bean
